@@ -42,30 +42,41 @@ if "!_DEST!"=="" (
     exit /b 0
 )
 
-echo "%~1";;!_DEST! >> "%~dp0queue.txt"
-echo Queued: %~nx1 -^> !_DEST!
-
 set "_LOCK=%~dp0queue.lock"
-if exist "!_LOCK!" (
-    for /f "delims=" %%T in ('powershell -NoProfile -Command "if((Get-Date)-(Get-Item '!_LOCK!').LastWriteTime -gt [TimeSpan]::FromHours(24)){'OLD'}else{'RECENT'}"') do set "_LOCKAGE=%%T"
-    if "!_LOCKAGE!"=="OLD" (
-        del "!_LOCK!"
-    ) else (
-        echo.
-        echo  A queue.lock file is present and was written less than 24 hours ago.
-        echo  The queue processor may still be running.
-        echo.
-        echo  If you are sure no processor is running, delete queue.lock manually:
-        echo    %~dp0queue.lock
-        echo.
-        echo  Close this window to exit.
-        pause >nul
-        exit /b 0
-    )
+set "_QUEUE=%~dp0queue.txt"
+
+if not exist "!_LOCK!" goto :add_and_start
+
+for /f "delims=" %%T in ('powershell -NoProfile -Command "if((Get-Date)-(Get-Item '!_LOCK!').LastWriteTime -gt [TimeSpan]::FromHours(24)){'OLD'}else{'RECENT'}"') do set "_LOCKAGE=%%T"
+
+if "!_LOCKAGE!"=="RECENT" (
+    echo "%~1";;!_DEST! >> "!_QUEUE!"
+    exit /b 0
 )
 
-start "Queue Processor" cmd /c "%~dp0process-queue.bat"
+echo.
+echo  WARNING: A stale lock file was found ^(older than 24 hours^).
+echo  The queue processor may have crashed or been killed.
+echo.
+echo  Lock file : !_LOCK!
+echo  Queue file: !_QUEUE!
+echo.
+echo  [1] Delete queue.txt and queue.lock, then start fresh with this file
+echo  [2] Abort -- investigate and clean up manually
+echo.
+choice /c 12 /n /m "Choose [1/2]: "
+if errorlevel 2 (
+    echo Aborted. Clean up the files listed above before retrying.
+    timeout /t 3 >nul
+    exit /b 0
+)
+del "!_QUEUE!" 2>nul
+del "!_LOCK!"
 
+:add_and_start
+echo "%~1";;!_DEST! >> "!_QUEUE!"
+echo Queued: %~nx1 -^> !_DEST!
+start "Queue Processor" cmd /c "%~dp0process-queue.bat"
 timeout /t 2 >nul
 goto :eof
 
