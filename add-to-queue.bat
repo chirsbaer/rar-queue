@@ -45,6 +45,25 @@ if "!_DEST!"=="" (
 echo "%~1";;!_DEST! >> "%~dp0queue.txt"
 echo Queued: %~nx1 -^> !_DEST!
 
+set "_LOCK=%~dp0queue.lock"
+if exist "!_LOCK!" (
+    for /f "delims=" %%T in ('powershell -NoProfile -Command "if((Get-Date)-(Get-Item '!_LOCK!').LastWriteTime -gt [TimeSpan]::FromHours(24)){'OLD'}else{'RECENT'}"') do set "_LOCKAGE=%%T"
+    if "!_LOCKAGE!"=="OLD" (
+        del "!_LOCK!"
+    ) else (
+        echo.
+        echo  A queue.lock file is present and was written less than 24 hours ago.
+        echo  The queue processor may still be running.
+        echo.
+        echo  If you are sure no processor is running, delete queue.lock manually:
+        echo    %~dp0queue.lock
+        echo.
+        echo  Close this window to exit.
+        pause >nul
+        exit /b 0
+    )
+)
+
 start "Queue Processor" cmd /c "%~dp0process-queue.bat"
 
 timeout /t 2 >nul
