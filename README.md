@@ -7,6 +7,7 @@ A batch script system for queuing and extracting archives to specified destinati
 | File | Description |
 |------|-------------|
 | `add-to-queue.bat` | Adds files to the extraction queue with auto-detection or destination choice |
+| `add-folder-to-queue.bat` | Scans a folder (or multiple folders) for RAR files and adds them to the queue |
 | `process-queue.bat` | Processes the queue, extracts archives, and moves contents |
 | `queue.txt` | The queue file (created automatically) |
 | `queue.log` | Log file with timestamps (created automatically) |
@@ -22,7 +23,7 @@ Drag and drop an archive onto `add-to-queue.bat`, or run from command line:
 add-to-queue.bat "C:\path\to\archive.rar"
 ```
 
-> **Tip — Send To integration:** Add a shortcut to `add-to-queue.bat` in your Send To folder so you can right-click any archive and choose **Send to → add-to-queue**. Open the Send To folder by pressing `Win+R` and typing `shell:sendto`, then create a shortcut to `add-to-queue.bat` there.
+> **Tip — Send To integration:** Add shortcuts to `add-to-queue.bat` and `add-folder-to-queue.bat` in your Send To folder (`Win+R` → `shell:sendto`). Right-click any archive and choose **Send to → add-to-queue**, or right-click one or more folders and choose **Send to → add-folder-to-queue**. When creating shortcuts, set the **Target** to the full path of the `.bat` file and **Start in** to the script directory so the queue files are always written to the right place.
 
 If the archive path contains a folder named exactly `TV` or `Movies`, the destination is chosen automatically. Otherwise you are prompted:
 
@@ -32,6 +33,16 @@ If the archive path contains a folder named exactly `TV` or `Movies`, the destin
 - [4] Cancel
 
 The queue processor starts automatically if it is not already running.
+
+### Adding folders to queue
+
+Drag and drop a folder onto `add-folder-to-queue.bat`, or pass one or more folders as arguments. It recursively scans each folder for RAR files (skipping numbered parts except `.part01`) and queues them all in one pass:
+
+```
+add-folder-to-queue.bat "F:\Downloads\Show.S01" "F:\Downloads\Show.S02"
+```
+
+Auto-detection and destination prompts work the same as `add-to-queue.bat`. Selecting multiple folders via **Send To** is supported — Windows passes all selected folders as separate arguments to a single script invocation.
 
 ### Processing the Queue
 
